@@ -64,47 +64,51 @@ async def fetch_page(session, url):
         return await response.text()
 
 
-async def parse_page(content, callback_query):
+async def parse_page(content, callback_query=None, message=None):
     soup = BeautifulSoup(content, 'html.parser')
     products = []
     for item in soup.find_all("div", class_="ads-list-photo-item-title"):
         link = item.find('a')['href']
         title = item.find('a').text.strip()
+
         product_info = {'link': 'https://999.md' + link, 'title': title}
         products.append(product_info)
-        # Отправляем продукт пользователю по мере обработки
-        await callback_query.message.answer(f"{title}: https://999.md{link}")
+        if callback_query:
+            await callback_query.message.answer(f"{title}: https://999.md{link}")
+        elif message:
+            await message.answer(f"{title}: https://999.md{link}")
     return products
 
 
-async def parse_category_products(url: str, callback_query: types.CallbackQuery, pagination: str = "?page="):
+async def parse_category_products(
+    url: str, pagination: str = "?page=", callback_query: types.CallbackQuery = None,
+    message: types.Message = None, text_query: str = "",
+):
     headers = {'Accept-Language': 'ru'}
     async with aiohttp.ClientSession(headers=headers) as session:
         tasks = []
-        for page in range(1, 2):
-            page_url = f"{url}{pagination}{page}"
+        for page in range(2, ):
+            if callback_query:
+                page_url = f"{url}{pagination}{page}"
+            else:
+                page_url = f"{url}{pagination}{page}&query={text_query}"
+            print(page_url)
             content = await fetch_page(session, page_url)
-            task = asyncio.create_task(parse_page(content, callback_query))
+            if callback_query:
+                task = asyncio.create_task(parse_page(content, callback_query=callback_query))
+            else:
+                task = asyncio.create_task(parse_page(content, message=message))
             tasks.append(task)
 
         # Ждем завершения всех задач
         await asyncio.gather(*tasks)
 
 
-async def parse_by_query(url: str):
-    headers = {'Accept-Language': 'ru'}
-    async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(url) as response:
-            content = await response.text()
-        soup = BeautifulSoup(content, 'html.parser')
-        products = []
-        for item in soup.find_all("div", class_="ads-list-photo-item-title"):
-            link = item.find('a')['href']
-            title = item.find('a').text.strip()
-            product_info = {'link': 'https://999.md' + link, 'title': title}
-
-
 if __name__ == '__main__':
     # print(asyncio.run(parse_subcategories('https://999.md/ru/category/transport')))
-    # print(asyncio.run(parse_category_products("https://999.md/ru/list/transport/cars")))
-    print(asyncio.run(parse_by_query("https://999.md/ru/search?query=телевизор")))
+    # print(asyncio.run(parse_category_products("https://999.md/ru/search?query=Volkswagen%20Tiguan")))
+    response = rq.get("https://999.md/ru/86616025")
+    soup = BeautifulSoup(response.text, 'html.parser')
+    phone = soup.find("div", class_="adPage__content__footer__wrapper").find("a").get("href").split(":")[1]
+    print(phone)
+    ...

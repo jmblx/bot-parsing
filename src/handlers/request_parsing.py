@@ -15,8 +15,9 @@ user_private_router = Router()
 
 
 class ParsingStates(StatesGroup):
-    waiting_for_request = State()
-    processing_request = State()
+    waiting_for_query = State()
+    parsing_in_progress = State()
+
 
 
 @user_private_router.message(
@@ -32,27 +33,27 @@ async def parsing(message: types.Message, session: AsyncSession, redis: Redis):
 @user_private_router.callback_query(or_f(
     F.data.startswith("request_")
 ))
-async def start_parsing_by_query(callback_query: types.CallbackQuery, state: FSMContext, redis: Redis):
-    await state.set_state(ParsingStates.waiting_for_request)
-    await callback_query.message.answer("Введите текст запроса для парсинга или 'отмена' для завершения.")
-    await callback_query.answer()
-
-
-@user_private_router.message(ParsingStates.waiting_for_request, F.text)
-async def process_query_text(message: types.Message, state: FSMContext, session: AsyncSession, redis: Redis):
-    query_text = message.text
-    if query_text.lower() == "отмена":
-        await state.clear()
-        await message.answer("Запрос отменен.", reply_markup=get_main_kb())
-        return
-
-    await state.set_state(ParsingStates.processing_request)
-    button_id = "1"
+async def start_parsing_query(
+        callback_query: types.CallbackQuery, state: FSMContext, session: AsyncSession, redis: Redis
+):
+    button_id = callback_query.data.split("_")[2]
     button_url = await redis.get(button_id)
     if not button_url:
         button_url = (await session.get(Button, int(button_id))).url
-        await redis.setex(button_id, 60 * 60, button_url)  # Кэширование на час
+        await redis.setex(button_id, 60, button_url)
+    await state.set_data({'button_url': button_url})
+    await state.set_state(ParsingStates.waiting_for_query)
+    await callback_query.message.answer("Введите ваш запрос:")
+    await callback_query.answer()
 
-    await parse_category_products(f"{button_url}{query_text}", callback_query=message)
+
+@user_private_router.message(ParsingStates.waiting_for_query, F.text)
+async def process_user_query(message: types.Message, state: FSMContext):
+    user_query = message.text
+    data = await state.get_data()
+    full_query_url = f"{data['button_url']}/ru/search"
+    await state.set_state(ParsingStates.parsing_in_progress)
+    await parse_category_products(full_query_url, message=message, text_query=user_query)
     await state.clear()
-    await message.answer("Парсинг завершен.", reply_markup=get_main_kb())
+    await message.answer("Завершили обработку вашего запроса.")
+

@@ -63,6 +63,7 @@ async def on_shutdown(bot):
     await drop_db()
     print("")
 
+
 async def main():
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)

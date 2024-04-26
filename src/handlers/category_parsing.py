@@ -83,10 +83,7 @@ async def select_subcategory(callback_query: types.CallbackQuery, redis: Redis):
     if subcategory_data_json:
         subcategory_data = json.loads(subcategory_data_json)
     else:
-        # Здесь нужен код для парсинга подкатегорий, если данные отсутствуют в Redis
-        # Допустим, функция `parse_subcategories(url)` парсит данные и возвращает словарь
-        # Ниже предполагаемая заглушка для этой функции
-        subcategory_data = await parse_subcategories("some_url")  # Замените "some_url" на реальный URL
+        subcategory_data = await parse_subcategories("some_url")
         await redis.setex(subcategory_id, 60, json.dumps(subcategory_data))
 
     inline_buttons = []
@@ -111,5 +108,4 @@ async def parse_products(callback_query: types.CallbackQuery, redis: Redis):
     subsubcategory_id = callback_query.data.split("_")[1]
     subsubcategory_url = f"https://999.md{await redis.get(subsubcategory_id)}"
     await parse_category_products(subsubcategory_url, callback_query=callback_query)
-
     await callback_query.answer()
