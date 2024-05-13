@@ -12,14 +12,16 @@ from sqlalchemy import insert, update
 # from config import ADMIN_LIST
 from database.models import User, Button
 from middlewares.redis_config import RedisSession
-from parsing.const import SITES
 
 from middlewares.db import DataBaseSession
 from database.engine import session_maker, create_db, drop_db
 from dotenv import find_dotenv, load_dotenv
 from kbds.reply import get_main_kb, admin_check
 from handlers.category_parsing import user_private_router as parsing_router
-from handlers.request_parsing import user_private_router as request_parsing_router
+from handlers.request_parsing import (
+    user_private_router as request_parsing_router,
+)
+from parsing.sites import SITES
 
 load_dotenv(find_dotenv())
 
@@ -50,12 +52,21 @@ async def on_startup(bot):
     await drop_db()
     await create_db()
     async with session_maker() as session:
-        for name, url in SITES.items():
+        for name, data in SITES.items():
+            url = data.get("url")
             button_id = (
-                await session.execute(insert(Button).values(name=name, url=url, type="site").returning(Button.id))
+                await session.execute(
+                    insert(Button)
+                    .values(name=name, url=url, type="site")
+                    .returning(Button.id)
+                )
             ).scalar()
             await session.commit()
-            await session.execute(update(Button).where(Button.id == button_id).values(callback_data=f"site_{button_id}"))
+            await session.execute(
+                update(Button)
+                .where(Button.id == button_id)
+                .values(callback_data=f"site_{button_id}")
+            )
         await session.commit()
 
 
@@ -68,7 +79,9 @@ async def main():
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
     dp.update.middleware(DataBaseSession(session_pool=session_maker))
-    dp.update.middleware(RedisSession(os.getenv("REDIS_PATH", "redis://localhost")))
+    dp.update.middleware(
+        RedisSession(os.getenv("REDIS_PATH", "redis://localhost"))
+    )
     await bot.delete_webhook(drop_pending_updates=True)
     # await bot.delete_my_commands(scope=types.BotCommandScopeAllPrivateChats())
     await dp.start_polling(bot, allowed_updates=ALLOWED_UPDATES)

@@ -4,7 +4,7 @@ from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
-ADMIN_LIST = (os.getenv('ADMIN_LIST', "1039610272")).split(",")
+ADMIN_LIST = (os.getenv("ADMIN_LIST", "1039610272")).split(",")
 
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")

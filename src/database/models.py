@@ -7,7 +7,7 @@ Base = declarative_base()
 
 
 class Button(Base):
-    __tablename__ = 'button'
+    __tablename__ = "button"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str]
@@ -17,8 +17,9 @@ class Button(Base):
 
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = "user"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger, primary_key=True, autoincrement=True
+    )
     settings = mapped_column(JSON, nullable=True)
-

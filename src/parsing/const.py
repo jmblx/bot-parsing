@@ -1,1 +1,1 @@
-SITES = {"999.md": "https://999.md"}
+DOMENS = {"md": "Молдова"}

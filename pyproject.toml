@@ -5,6 +5,10 @@ description = ""
 authors = ["CoSm1C AvEnGeR <zhora.zhilin.06@mail.ru>"]
 readme = "README.md"
 
+[tool.black]
+line-length = 79
+verbose = true
+
 [tool.poetry.dependencies]
 python = "^3.11"
 sqlalchemy = "^2.0.29"
@@ -17,7 +21,9 @@ requests = "^2.31.0"
 lxml = "^5.2.1"
 aiosqlite = "^0.20.0"
 redis = "^5.0.3"
-
+pycountry = "^23.12.11"
+black = "^24.4.2"
+selenium = "^4.20.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -15,9 +15,11 @@ class RedisSession(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        redis = await from_url(self.redis_url, encoding="utf-8", decode_responses=True)
+        redis = await from_url(
+            self.redis_url, encoding="utf-8", decode_responses=True
+        )
         try:
-            data['redis'] = redis
+            data["redis"] = redis
             response = await handler(event, data)
         finally:
             await redis.close()

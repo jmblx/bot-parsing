@@ -5,7 +5,9 @@ from database.models import Button
 
 
 async def get_sites_buttons(session: AsyncSession):
-    button_sites = await session.execute(select(Button).where(Button.type == 'site'))
+    button_sites = await session.execute(
+        select(Button).where(Button.type == "site")
+    )
     return button_sites.scalars().all()
 
 
