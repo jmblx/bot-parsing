@@ -35,14 +35,17 @@ async def start_parsing_query(
     redis: Redis,
 ):
     button_id = callback_query.data.split("_")[2]
-    button_url = await redis.get(button_id)
+
+
     button = await session.get(Button, int(button_id))
-    parser_class = SITES[button.name].get("class")
+    site = SITES[button.name]
+    parser_class = site.get("class")
+    button_search_url = site.get("search_url")
     parser = parser_class()
-    if not button_url:
+    if not button_search_url:
         button_url = button.url
         await redis.setex(button_id, 60, button_url)
-    await state.set_data({"button_url": button_url, "parser": parser})
+    await state.set_data({"search_url": button_search_url, "parser": parser})
     await state.set_state(ParsingStates.waiting_for_query)
     await callback_query.message.answer("Введите ваш запрос:")
     await callback_query.answer()
@@ -53,10 +56,11 @@ async def process_user_query(message: types.Message, state: FSMContext):
     user_query = message.text
     data = await state.get_data()
     parser = data.get("parser")
-    full_query_url = f"{data['button_url']}/ru/search"
+    # full_query_url = f"{data['button_url']}/ru/search"
+    search_url = data.get("search_url")
     await state.set_state(ParsingStates.parsing_in_progress)
     await parser.parse_category_products(
-        full_query_url, message=message, text_query=user_query
+        url=search_url, message=message, text_query=user_query
     )
     await state.clear()
     await message.answer("Завершили обработку вашего запроса.")

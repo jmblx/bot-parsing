@@ -26,14 +26,24 @@ def get_country_name(url):
         return "Не опредлено"
 
 
-def form_data(data: dict):
+def form_data(data: dict, text_limit: int = 200) -> str:
+    data["text"] = data["text"] if len(data["text"]) < text_limit else data["text"][:text_limit] + "..."
+    required = ['title', 'date', 'country', 'phone', 'price', 'link']
+    for key in required:
+        if key not in data:
+            data[key] = "Нет данных"
+    if data.get('alternative_prices', None):
+        alt = f"<b>Дополнительные цены:</b>\n  - <code>{data['alternative_prices']}</code>\n"
+    else:
+        alt = ""
+
     message = (
         f"<b>🛒 Название товара:</b> {data['title']}\n"
         f"<b>📅 Дата обновления:</b> {data['date']}\n"
         f"<b>🌍 Страна:</b> {data['country']}\n"
-        f"<b>📞 Телефон:</b> <code>{data['phone']}</code>\n"
+        f"<b>📞 Телефоны:</b> <code>{data['phone']}</code>\n"
         f"<b>💵 Цена:</b> <code>{data.get('price', 'Договорная')}</code>\n"
-        f"<b>Дополнительные цены:</b>\n  - <code>{data['alternative_prices']}</code>\n"
+        f"{alt}"
         f"<b>🔗 Ссылка на объявление:</b> {data['link']}\n"
         f"<b>📝 Описание:</b>\n{data['text']}\n"
     )

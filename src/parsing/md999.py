@@ -205,7 +205,7 @@ class MD999(BaseParser):
     async def parse_category_products(
         self,
         url: str,
-        pagination: str = "?page=",
+        pagination: str = "page=",
         callback_query: types.CallbackQuery = None,
         message: types.Message = None,
         text_query: str = "",
@@ -225,7 +225,7 @@ class MD999(BaseParser):
                 if callback_query:
                     page_url = f"{url}{pagination}{page}"
                 else:
-                    page_url = f"{url}{pagination}{page}&query={text_query}"
+                    page_url = f"{url}{text_query}&{pagination}{page}"
 
                 print(page_url)
                 content = await self.fetch_page(session, page_url)

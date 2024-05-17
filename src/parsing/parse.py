@@ -20,12 +20,7 @@ driver = webdriver.Chrome(options=options)
 driver.maximize_window()
 driver.get("https://kolesa.kz/a/show/167310286")
 # cookies = pickle.load(open("./cookies.pkl", "rb"))
-# for cookie in cookies:
-#     driver.add_cookie(cookie)
-#     print(cookie)
-driver.refresh()  # Обновите страницу, чтобы учесть новый токен
 driver.find_element(By.CLASS_NAME, "seller-phones__show-button").click()
-time.sleep(2)
 html_source = driver.page_source
 
 print(html_source)

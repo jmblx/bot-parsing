@@ -19,7 +19,7 @@ class KolesaKz(BaseParser):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.webdriver = get_driver(self.base_url)
+        # self.webdriver = get_driver(self.base_url)
 
     async def parse_categories(self, url: Optional[str] = None) -> dict:
         url = self.base_url if url is None else url
@@ -34,13 +34,17 @@ class KolesaKz(BaseParser):
             async with session.get(url, ssl=False) as response:
                 content = await response.text()
             soup = BeautifulSoup(content, "html.parser")
-        cats = soup.find_all("li", class_="main-menu__item")
-        categories = {}
-        for cat in cats:
-            cat = cat.find("a")
-            cat_name = cat.text.strip()
-            cat_url = f'{url}{cat.get("href")}'
-            categories[cat_name] = cat_url
+            cats = soup.find_all("li", class_="main-menu__item")
+            categories = {}
+            for cat in cats:
+                cat = cat.find("a")
+                cat_name = cat.text.strip()
+                cat_url = f'{url}{cat.get("href")}'
+                response = await session.get(cat_url)
+                soup = BeautifulSoup(await response.text(), "html.parser")
+                if soup.find("div", class_="menu-container"):
+                    categories[cat_name] = cat_url
+
         return categories
 
     async def parse_subcategories(self, url: str, mode: str = "deep") -> dict:
@@ -73,14 +77,44 @@ class KolesaKz(BaseParser):
         message: types.Message = None,
         rate_limit=1,
     ) -> None:
-        driver = self.webdriver
-        driver.get(url)
-        driver.find_element(By.CLASS_NAME, "seller-phones__show-button").click()
-        time.sleep(1)
-        content = driver.page_source
+        # driver = self.webdriver
+        # driver.get(url)
+        # driver.find_element(By.CLASS_NAME, "seller-phones__show-button").click()
+        # time.sleep(2)
+        # content = driver.page_source
+        headers = {
+            "Accept-Language": "ru",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+        }
+        conn = aiohttp.TCPConnector(ssl=False)
+        semaphore = asyncio.Semaphore(rate_limit)
+        async with aiohttp.ClientSession(
+            headers=headers, trust_env=True, connector=conn
+        ) as session:
+            content = await fetch(url, session, semaphore)
 
         soup = BeautifulSoup(content, "lxml")
-        print(soup.find("ul", class_="seller-phones__phones-list"))
+        # print(soup, soup.find("ul", class_="seller-phones__phones-list").find_all("li"), soup.find("div", class_="offer__price").text.strip(), sep="\n")
+        # phones = soup.find("ul", class_="seller-phones__phones-list").find_all("li")
+        # data["phone"] = "\n".join([phone.text for phone in phones])
+        data["price"] = soup.find("div", class_="offer__price").text.strip().replace(r'\xa0000\n    ','')
+        result = []
+        dl_tags = soup.find("div", class_="offer__sidebar-info").find_all('dl')
+        for dl in dl_tags:
+            title = dl.find('dt').get_text(strip=True).replace('\xa0', ' ')  # Убрать спецсимволы и пробелы
+            value = dl.find('dd').get_text(strip=True).replace('\xa0', ' ')
+            result.append(f"{title}: {value}")
+        final_string = ", ".join(result)
+        description = soup.find("div", class_="text").text.strip()
+        data["text"] = final_string + "\n" + description
+        data["country"] = get_country_name(url)
+        formed_data = form_data(data)
+
+        if callback_query:
+            await callback_query.message.answer(formed_data)
+        elif message:
+            await message.answer(formed_data)
+        # print(data)
         # main_price_element = soup.find("li", class_="is-main")
         # if main_price_element:
         #     extracted_price = main_price_element.find(
@@ -169,10 +203,8 @@ class KolesaKz(BaseParser):
             c += 1
             if c > 7:
                 return products
-
         await asyncio.gather(*tasks)
 
-        print(products)
         return products
 
     async def fetch_page(self, session, url: str):
@@ -181,7 +213,7 @@ class KolesaKz(BaseParser):
     async def parse_category_products(
         self,
         url: str,
-        pagination: str = "?page=",
+        pagination: str = "page=",
         callback_query: types.CallbackQuery = None,
         message: types.Message = None,
         text_query: str = "",
@@ -189,7 +221,6 @@ class KolesaKz(BaseParser):
         headers = {
             "Accept-Language": "ru",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Cookie": "klssid=rcdemcvek7qd6n2392alqhsupj; _ym_uid=171551082217295284; _ym_d=1715510822; _gid=GA1.2.445849201.1715510823; _ym_isad=2; _tt_enable_cookie=1; _ttp=sLwHRW1KDKQNCRfbxFM1wzNoUJ0; _gat=1; __gads=ID=2df42fa593bdcd87:T=1715510823:RT=1715510823:S=ALNI_MZAaVnPcljy_WLyvBQW_t0ozHm-VQ; __gpi=UID=00000d727953d030:T=1715510823:RT=1715510823:S=ALNI_MYHSLYEhKwg_hzNY-1TPPm6FULgjA; __eoi=ID=05568d2577653a2e:T=1715510823:RT=1715510823:S=AA-AfjaJOsQskIHc4nA1NTdULuy-; ssaid=f802d9b0-104c-11ef-b87b-258c4ea1c41b; _ym_visorc=b; _fbp=fb.1.1715510824311.480844974; kl_cdn_host=//cf-check.kcdn.online; gh_show=1; _ga=GA1.1.1231669.1715510823; __tld__=null; _ga_K434WRXPFF=GS1.1.1715510823.1.1.1715510830.53.0.297260306",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
         }
         conn = aiohttp.TCPConnector(ssl=False)
@@ -203,7 +234,7 @@ class KolesaKz(BaseParser):
                 if callback_query:
                     page_url = f"{url}{pagination}{page}"
                 else:
-                    page_url = f"{url}{pagination}{page}&query={text_query}"
+                    page_url = f"{url}{text_query}&{pagination}{page}"
 
                 print(page_url)
                 content = await self.fetch_page(session, page_url)
@@ -218,13 +249,27 @@ class KolesaKz(BaseParser):
                 tasks.append(task)
 
             await asyncio.gather(*tasks)
-            self.webdriver.quit()
+            # self.webdriver.quit()
 
 
 if __name__ == "__main__":
-    j = KolesaKz()
-    print(j.webdriver)
+    # j = KolesaKz()
+    # print(j.webdriver)
     # print(asyncio.run(j.parse_categories("https://kolesa.kz")))
-    # response = rq.get("https://olx.ba/")
-    # soup = BeautifulSoup(response.content, "lxml")
-    # print(soup)
+    import pickle
+    import requests
+
+    # Загрузите cookies из файла
+    with open('cookies_kolesa.pkl', 'rb') as f:
+        cookies = pickle.load(f)
+
+    # Создайте сессию requests
+    session = requests.Session()
+    print(cookies)
+    # session.cookies.update(cookies)
+
+    # Теперь вы можете использовать сессию для отправки запросов, которые включают ваши cookies
+    response = session.get("https://kolesa.kz/a/show/170159273")
+    soup = BeautifulSoup(response.content, "lxml")
+    print(soup.find("ul", class_="seller-phones__phones-list"))
+
