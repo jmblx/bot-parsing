@@ -24,10 +24,10 @@ class ParsingStates(StatesGroup):
     )
 )
 async def parsing(message: types.Message, session: AsyncSession, redis: Redis):
-    await default_site_selection(message, session, redis, "request")
+    await default_site_selection(message, session, redis, "query")
 
 
-@user_private_router.callback_query(or_f(F.data.startswith("request_")))
+@user_private_router.callback_query(or_f(F.data.startswith("query_")))
 async def start_parsing_query(
     callback_query: types.CallbackQuery,
     state: FSMContext,
@@ -59,7 +59,7 @@ async def process_user_query(message: types.Message, state: FSMContext):
     # full_query_url = f"{data['button_url']}/ru/search"
     search_url = data.get("search_url")
     await state.set_state(ParsingStates.parsing_in_progress)
-    await parser.parse_category_products(
+    await parser.parse_all_pages(
         url=search_url, message=message, text_query=user_query
     )
     await state.clear()

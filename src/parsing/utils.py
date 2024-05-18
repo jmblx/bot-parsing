@@ -2,6 +2,7 @@ import os
 import pickle
 import re
 import time
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 import pycountry
 from selenium import webdriver
@@ -72,9 +73,23 @@ def get_driver(url: str):
     driver = webdriver.Chrome(options=options)
     driver.maximize_window()
     driver.get(url)
-    cookies_file_path = os.path.join("parsing", "cookies_kolesa.pkl")
-    cookies = pickle.load(open(cookies_file_path, "rb"))
-    for cookie in cookies:
-        driver.add_cookie(cookie)
+    # cookies_file_path = os.path.join("parsing", "cookies_kolesa.pkl")
+    # cookies = pickle.load(open(cookies_file_path, "rb"))
+    # for cookie in cookies:
+    #     driver.add_cookie(cookie)
     # pickle.dump(driver.get_cookies(), open("cookies.pkl", "wb"))
     return driver
+
+
+def modify_url_gumtreeza(url, page, q_param):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+
+    # Формирование нового пути с учётом номера страницы
+    new_path = f"/s-all-the-ads/page-{page}/v1b0p{page}"
+
+    # Сборка нового URL
+    new_url = urlunparse(parsed_url._replace(path=new_path, query=urlencode({'q': q_param})))
+    return new_url
+
+

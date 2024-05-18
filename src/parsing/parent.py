@@ -3,7 +3,7 @@ from aiogram import types
 
 
 class BaseParser(ABC):
-    base_url = None  # Установите базовый URL как атрибут класса
+    base_url = None
 
     def __init__(self):
         if self.base_url is None:
@@ -15,7 +15,7 @@ class BaseParser(ABC):
     async def parse_subcategories(self, url: str, mode: str = "deep") -> dict:
         pass
 
-    async def parse_category_products(
+    async def parse_all_pages(
         self,
         url: str,
         pagination: str = "?page=",

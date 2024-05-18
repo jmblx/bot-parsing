@@ -17,15 +17,17 @@ async def default_site_selection(
     buttons = await get_sites_buttons(session)
     inline_buttons = []
     for button in buttons:
-        print(button, button.callback_data)
-        inline_buttons.append(
-            InlineKeyboardButton(
-                text=button.name,
-                callback_data=f"{callback_prefix}_{button.callback_data}",
+        print(button.modes)
+        if callback_prefix == "category" and button.modes.get(callback_prefix, "")\
+                or callback_prefix == "query" and button.modes.get(callback_prefix, ""):
+            inline_buttons.append(
+                InlineKeyboardButton(
+                    text=button.name,
+                    callback_data=f"{callback_prefix}_{button.callback_data}",
+                )
             )
-        )
-        # Сохранение URL с TTL
-        await redis.setex(button.id, 60, button.url)
+            await redis.setex(button.id, 60, button.url)
+
     inline_keyboard = get_inline_keyboard(inline_buttons, in_row=1)
     await message.answer(
         "Выберите сайт для парсинга", reply_markup=inline_keyboard

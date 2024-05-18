@@ -155,7 +155,7 @@ async def parse_products(callback_query: types.CallbackQuery, state: FSMContext,
     last_category = await redis.get(last_category_id)
     last_category_url = normalize_url(last_category)
 
-    await parser.parse_category_products(
+    await parser.parse_all_pages(
         last_category_url, callback_query=callback_query
     )
     await state.clear()

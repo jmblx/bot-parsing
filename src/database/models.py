@@ -14,6 +14,7 @@ class Button(Base):
     url: Mapped[str] = mapped_column(nullable=True)
     callback_data: Mapped[str] = mapped_column(nullable=True)
     type: Mapped[str]
+    modes: Mapped[dict] = mapped_column(JSON)
 
 
 class User(Base):

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 from aiogram import Bot, Dispatcher, types
@@ -26,6 +27,8 @@ from parsing.sites import SITES
 load_dotenv(find_dotenv())
 
 ALLOWED_UPDATES = ["message, edited_message"]
+
+logging.basicConfig(level=logging.INFO)
 
 bot_properties = DefaultBotProperties(parse_mode=ParseMode.HTML)
 bot = Bot(default=bot_properties, token=os.getenv("TOKEN"))
@@ -57,7 +60,7 @@ async def on_startup(bot):
             button_id = (
                 await session.execute(
                     insert(Button)
-                    .values(name=name, url=url, type="site")
+                    .values(name=name, url=url, type="site", modes=data.get("modes"))
                     .returning(Button.id)
                 )
             ).scalar()

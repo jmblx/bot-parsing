@@ -210,7 +210,7 @@ class KolesaKz(BaseParser):
     async def fetch_page(self, session, url: str):
         return await super().fetch_page(session, url)
 
-    async def parse_category_products(
+    async def parse_all_pages(
         self,
         url: str,
         pagination: str = "page=",
